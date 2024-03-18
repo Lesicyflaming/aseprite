@@ -10,42 +10,27 @@ jobs:
         build_type: [Release]
         enable_ui: [on]
         include:
-          - os: ubuntu-latest
+          - os: windows-latest
             build_type: Release
             enable_ui: on
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1
-      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
+      if: runner.os == 'Linux'
       with:
-        key: ${{ matrix.os }}-${{ matrix.enable_ui }}-${{ matrix.build_type }}
-    - uses: turtlesec-no/get-ninja@main
+        key: ${{ matrix.os }}-${{ matrix.enable_ui }}
+    - uses: seanmiddleditch/gha-setup-ninja@master
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows'
-    - name: Workaround for windows-2022 and cmake 3.25.0
-      if: runner.os == 'Windows'
-      shell: bash
-      run: rm -rf C:/Strawberry/
-    - name: Install Dependencies
-      shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]] ; then
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            libx11-dev libxcursor-dev libxi-dev
-        fi
     - name: Generating Makefiles
       shell: bash
       run: |
-        if [[ "${{ runner.os }}" == "Windows" ]] ; then
-          export enable_ccache=off
-        else
-          export enable_ccache=on
-        fi
+        export enable_ccache=off
         curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/libcrypto-1_1-x64.dll --output libcrypto-1_1-x64.dll
         7z x skia.zip
         cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
@@ -55,7 +40,6 @@ jobs:
           -DSKIA_DIR=./skia \
           -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
           -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
-
     - name: Compiling
       shell: bash
       run: |
@@ -64,5 +48,6 @@ jobs:
       with:
         name: aseprite
         path: |
+          libcrypto-1_1-x64.dll
           D:/a/aseprite/aseprite/build/bin/data
           D:/a/aseprite/aseprite/build/bin/aseprite.exe
